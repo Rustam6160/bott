@@ -9,12 +9,12 @@ import aiosqlite
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, FloodWaitError
 from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator, Channel
 
-OWNER_ID = 1771561807  # Замените на ваш ID
+OWNER_ID = 7179318927  # Замените на ваш ID
 
 # Укажите свои данные API
 API_ID = "26556187"
 API_HASH = "cc6f1344a315e9bb79fd4bf37b16794d"
-BOT_TOKEN = "7306593002:AAFA540655TxgCELgLvrtFtgmELwZKkT5-g"
+BOT_TOKEN = "7794200983:AAGcf4ofG_75yFwKRk7HSl_gpDVtsHsBAeU"
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
