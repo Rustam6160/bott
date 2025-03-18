@@ -9,12 +9,12 @@ import aiosqlite
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, FloodWaitError
 from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator, Channel
 
-OWNER_ID = 7179318927  # Замените на ваш ID
+OWNER_ID = 1771561807  # Замените на ваш ID
 
 # Укажите свои данные API
 API_ID = "26556187"
 API_HASH = "cc6f1344a315e9bb79fd4bf37b16794d"
-BOT_TOKEN = "7794200983:AAGcf4ofG_75yFwKRk7HSl_gpDVtsHsBAeU"
+BOT_TOKEN = "7306593002:AAFA540655TxgCELgLvrtFtgmELwZKkT5-g"
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -450,19 +450,54 @@ async def print_all_users():
 # Добавляем словарь для хранения времени последнего вызова команды /start
 last_start_time = {}
 
+
 @bot.on(events.NewMessage(pattern='/start'))
 async def start(event):
     user_id = event.sender_id
     current_time = datetime.now()
 
-    # Если пользователь уже авторизован, показываем меню и выходим
-    if user_id in user_states and user_states[user_id].get('stage') == 'authorized':
-        buttons = [
-            [Button.inline("Создать рассылку", b"create_mailing")],
-            [Button.inline("Список рассылок", b"mailing_list")]
-        ]
+    # Проверяем, авторизован ли пользователь и активен ли его аккаунт
+    conn = await get_db_connection()
+    try:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT is_active FROM users WHERE user_id = ?", (user_id,))
+        user = await cursor.fetchone()
+
+        # Если пользователь найден и он заблокирован
+        if user and user[0] == 0:
+            await event.respond("⛔ Ваш доступ заблокирован. Обратитесь к администратору @JerdeshMoskva_admin")
+            return
+    finally:
+        await conn.close()
+
+    # Если пользователь уже авторизован и активен, показываем меню
+    client = await load_user_session(user_id)
+    if client:
+        # Проверяем, является ли пользователь владельцем
         if user_id == OWNER_ID:
-            buttons.append([Button.inline("Список пользователей", b"user_list")])
+            buttons = [
+                [Button.inline("Создать рассылку", b"create_mailing")],
+                [Button.inline("Список рассылок", b"mailing_list")],
+                [Button.inline("Список пользователей", b"user_list")]
+            ]
+        else:
+            # Если пользователь не владелец, проверяем, был ли он одобрен
+            conn = await get_db_connection()
+            try:
+                cursor = await conn.cursor()
+                await cursor.execute("SELECT is_active FROM users WHERE user_id = ?", (user_id,))
+                user = await cursor.fetchone()
+                if user and user[0] == 1:
+                    buttons = [
+                        [Button.inline("Создать рассылку", b"create_mailing")],
+                        [Button.inline("Список рассылок", b"mailing_list")]
+                    ]
+                else:
+                    await event.respond("⛔ Ваш доступ ограничен. Обратитесь к администратору @JerdeshMoskva_admin")
+                    return
+            finally:
+                await conn.close()
+
         await event.respond("Вы уже авторизованы! Выберите действие:", buttons=buttons)
         return
 
@@ -477,14 +512,13 @@ async def start(event):
         await cursor.execute("SELECT id, is_active FROM users WHERE user_id = ?", (user_id,))
         user = await cursor.fetchone()
 
-
-
-        # Далее стандартная логика проверки авторизации
+        # Если пользователь уже зарегистрирован, но не авторизован
         if user:
             user_db_id, is_active = user
             if not is_active:
                 await event.respond(
-                    "Вы успешно авторизованы, но ваш доступ ограничен. Обратитесь к администратору для получения доступа. @JerdeshMoskva_admin затем снова нажмите /start")
+                    "⛔ Вы успешно авторизованы, но ваш доступ ограничен. Обратитесь к администратору @JerdeshMoskva_admin, затем снова нажмите /start"
+                )
                 return
             else:
                 # Если у пользователя есть сохранённая сессия, авторизуем его
@@ -502,7 +536,8 @@ async def start(event):
                     await event.respond("Вы уже авторизованы! Выберите действие:", buttons=buttons)
                     return
                 else:
-                    await event.respond("Привет! Для использования бота введите свой номер телефона в формате +XXXXXXXXXXX.")
+                    await event.respond(
+                        "Привет! Для использования бота введите свой номер телефона в формате +XXXXXXXXXXX.")
                     user_states[user_id]['stage'] = 'waiting_phone'
         else:
             # Если пользователь ещё не зарегистрирован, начинаем процесс авторизации
@@ -510,14 +545,7 @@ async def start(event):
             user_states[user_id]['stage'] = 'waiting_phone'
     except Exception as e:
         logger.error(f"Ошибка при обработке команды /start для пользователя {user_id}: {e}")
-        user_states[user_id] = {'stage': 'authorized'}
-        buttons = [
-            [Button.inline("Создать рассылку", b"create_mailing")],
-            [Button.inline("Список рассылок", b"mailing_list")]
-        ]
-        if user_id == OWNER_ID:
-            buttons.append([Button.inline("Список пользователей", b"user_list")])
-        await event.respond("Произошла ошибка. Пожалуйста, попробуйте снова.", buttons=buttons)
+        await event.respond("⚠️ Произошла ошибка. Пожалуйста, попробуйте снова.")
     finally:
         if conn:
             await conn.close()
