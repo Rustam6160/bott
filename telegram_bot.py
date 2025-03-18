@@ -470,9 +470,29 @@ async def start(event):
     finally:
         await conn.close()
 
-    # Если пользователь уже авторизован и активен, показываем меню
+    # Проверяем, есть ли уже загруженная сессия в user_states
+    if user_id in user_states and 'client' in user_states[user_id]:
+        client = user_states[user_id]['client']
+        # Проверяем, авторизован ли клиент
+        if await client.is_user_authorized():
+            # Показываем меню без повторной загрузки сессии
+            buttons = [
+                [Button.inline("Создать рассылку", b"create_mailing")],
+                [Button.inline("Список рассылок", b"mailing_list")]
+            ]
+            if user_id == OWNER_ID:
+                buttons.append([Button.inline("Список пользователей", b"user_list")])
+            await event.respond("Вы уже авторизованы! Выберите действие:", buttons=buttons)
+            return
+
+    # Если сессии нет в user_states, пробуем загрузить
     client = await load_user_session(user_id)
     if client:
+        # Сохраняем клиент в user_states
+        user_states[user_id] = {
+            'stage': 'authorized',
+            'client': client
+        }
         # Проверяем, является ли пользователь владельцем
         if user_id == OWNER_ID:
             buttons = [
@@ -1123,7 +1143,7 @@ async def handle_response(event):
             logger.info("Код отправлен. Ожидание ввода кода по одной цифре...")
         except Exception as e:
             logger.error(f"Error sending code: {e}")
-            await event.respond("Ошибка при отправке кода. Попробуйте снова.")
+            await event.respond("Ошибка при отправке кода. Попробуйте снова (возможно слишком частая попытка получить код(подождите 11 часовесли не получится)).")
 
     # Шаг 2: ввод кода авторизации по одной цифре
     elif state['stage'] == 'waiting_code':
@@ -1179,30 +1199,49 @@ async def handle_response(event):
             # Сбрасываем текущий код
             phone_codes[user_id]['current_code'] = ''
 
-    # Этап 2: Ввод пароля для 2FA
+    # В разделе обработки waiting_password:
     elif state['stage'] == 'waiting_password':
         password = event.raw_text.strip()
         try:
             client = phone_codes[user_id]['client']
             await client.sign_in(password=password)
-            state['stage'] = 'authorized'
+
             state['client'] = client
+            state['stage'] = 'authorized'  # Важно обновить состояние
 
             # Сохраняем информацию о пользователе
             user_info = await client.get_me()
             await save_user(user_id, user_info.username, user_info.first_name, user_info.last_name)
 
-            await event.respond("Авторизация успешна!")
-            logger.info(f"User {user_id} successfully authorized with 2FA.")
+            # Проверяем статус пользователя
+            conn = await get_db_connection()
+            try:
+                cursor = await conn.cursor()
+                await cursor.execute("SELECT is_active FROM users WHERE user_id = ?", (user_id,))
+                user = await cursor.fetchone()
+
+                # Проверяем, является ли пользователь владельцем
+                if user_id != OWNER_ID:
+                    # Если пользователь не владелец, блокируем его
+                    await ban_user(user_id)
+                    await event.respond(
+                        "Вы успешно авторизованы, но ваш доступ ограничен. Обратитесь к администратору для получения доступа. @JerdeshMoskva_admin затем снова нажмите /start")
+                else:
+                    await event.respond("Авторизация успешна!")
+                    await event.respond("Вы уже авторизованы! Выберите действие:", buttons=[
+                        [Button.inline("Создать рассылку", b"create_mailing")],
+                        [Button.inline("Список рассылок", b"mailing_list")]
+                    ])
+                logger.info(f"User {user_id} successfully authorized.")
+                state['stage'] = 'authorized'
+
+
+            finally:
+                await conn.close()
 
         except Exception as e:
             logger.error(f"Error during 2FA sign-in: {e}")
             await event.respond("Ошибка! Неверный пароль. Попробуйте снова.")
-
-    elif state['stage'] == 'entering_mailing_title':
-        state['mailing_name'] = event.raw_text.strip()
-        state['stage'] = 'waiting_media'
-        await event.respond("Отправьте фото или медиа для рассылки или введите 'пропустить'.")
 
 
     # Шаг 4: ожидание медиа (фото или видео)
