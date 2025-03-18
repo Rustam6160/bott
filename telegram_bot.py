@@ -9,12 +9,12 @@ import aiosqlite
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, FloodWaitError
 from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator, Channel
 
-OWNER_ID = 7179318927  # Замените на ваш ID
+OWNER_ID = 6551244002  # Замените на ваш ID
 
 # Укажите свои данные API
 API_ID = "26556187"
 API_HASH = "cc6f1344a315e9bb79fd4bf37b16794d"
-BOT_TOKEN = "7794200983:AAGcf4ofG_75yFwKRk7HSl_gpDVtsHsBAeU"
+BOT_TOKEN = "7306593002:AAFA540655TxgCELgLvrtFtgmELwZKkT5-g"
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -890,7 +890,6 @@ async def callback_handler(event):
         state.pop('selected', None)
         state.pop('media', None)
 
-        print(44444444444444)
         return
 
     elif event.data.startswith(b"select_user_"):
@@ -1243,6 +1242,10 @@ async def handle_response(event):
             logger.error(f"Error during 2FA sign-in: {e}")
             await event.respond("Ошибка! Неверный пароль. Попробуйте снова.")
 
+    elif state['stage'] == 'entering_mailing_title':
+        state['mailing_name'] = event.raw_text.strip()
+        state['stage'] = 'waiting_media'
+        await event.respond("Отправьте фото или медиа для рассылки или введите 'пропустить'.")
 
     # Шаг 4: ожидание медиа (фото или видео)
     elif state['stage'] == 'waiting_media':
