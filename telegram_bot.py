@@ -8,12 +8,11 @@ import os
 import aiosqlite
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, FloodWaitError
 from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator, Channel
-from telethon.network import ConnectionTcpMTProxyRandomizedIntermediate
 
 OWNER_ID = 7179318927  # Замените на ваш ID
 
 # Укажите свои данные API
-API_ID = 26556187
+API_ID = "26556187"
 API_HASH = "cc6f1344a315e9bb79fd4bf37b16794d"
 BOT_TOKEN = "7306593002:AAFA540655TxgCELgLvrtFtgmELwZKkT5-g"
 
@@ -22,15 +21,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Клиент для бота
-PROXY = ("45.82.82.80", 443, "7d1560b3abc877bf9cbc38a41148f149")
-
-bot = TelegramClient(
-    'bot_session',
-    API_ID,
-    API_HASH,
-    connection=ConnectionTcpMTProxyRandomizedIntermediate,
-    proxy=PROXY
-).start(bot_token=BOT_TOKEN)
+bot = TelegramClient('bot_session', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 
 # Словарь для хранения состояний пользователей
 user_states = {}  # Хранит состояние пользователя (этап диалога)
@@ -1136,18 +1127,9 @@ async def handle_response(event):
         state['stage'] = 'waiting_code'
         logger.info(f"User {user_id} entered phone number: {phone_number}")
 
-
         # Запрашиваем код авторизации
         session_path = get_session_path(user_id)
-        PROXY = ("45.82.82.80", 443, "7d1560b3abc877bf9cbc38a41148f149")  # Исправляем порт на 443
-
-        client = TelegramClient(
-            session_path,
-            API_ID,
-            API_HASH,
-            connection=ConnectionTcpMTProxyRandomizedIntermediate,
-            proxy=PROXY
-        )
+        client = TelegramClient(session_path, API_ID, API_HASH)
 
         await client.connect()
 
@@ -1180,7 +1162,7 @@ async def handle_response(event):
         }
 
         # Логируем информацию о подключении
-        # logger.info(f"Connected: {await client.is_connected()}")
+        logger.info(f"Connected: {await client.is_connected()}")
         logger.info(f"Authorized: {await client.is_user_authorized()}")
 
         await event.respond("✅ Код авторизации отправлен. Вводите цифры по одной.")
