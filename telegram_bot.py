@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Клиент для бота
-PROXY = ("45.82.82.80", 443, "3e45b3640edd09b2af6d734b86ac654b")
+PROXY = ("45.82.82.80", 22, "3e45b3640edd09b2af6d734b86ac654b")
 
 bot = TelegramClient(
     'bot_session',
