@@ -1,4 +1,4 @@
-from telethon import TelegramClient, events, Button
+from telethon import TelegramClient, events, Button, MTProxy
 from telethon.tl.functions.channels import GetParticipantRequest
 import asyncio
 import logging
