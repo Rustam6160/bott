@@ -1129,12 +1129,7 @@ async def handle_response(event):
 
         # Запрашиваем код авторизации
         session_path = get_session_path(user_id)
-        client = TelegramClient(
-            session_path,
-            API_ID,
-            API_HASH,
-            proxy=('socks5', 'proxy_host', 1080, True, 'login', 'password')
-        )
+        client = TelegramClient(session_path, API_ID, API_HASH)
         try:
             await client.connect()
 
