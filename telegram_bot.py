@@ -1,4 +1,4 @@
-from telethon import TelegramClient, events, Button, MTProxy
+from telethon import TelegramClient, events, Button
 from telethon.tl.functions.channels import GetParticipantRequest
 import asyncio
 import logging
@@ -8,6 +8,7 @@ import os
 import aiosqlite
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, FloodWaitError
 from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator, Channel
+from telethon.network import ConnectionTcpMTProxyRandomizedIntermediate
 
 OWNER_ID = 7179318927  # Замените на ваш ID
 
@@ -21,7 +22,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Клиент для бота
-bot = TelegramClient('bot_session', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
+PROXY = ("45.82.82.80", 443, "3e45b3640edd09b2af6d734b86ac654b")
+
+bot = TelegramClient(
+    'bot_session',
+    API_ID,
+    API_HASH,
+    connection=ConnectionTcpMTProxyRandomizedIntermediate,
+    proxy=PROXY
+).start(bot_token=BOT_TOKEN)
 
 # Словарь для хранения состояний пользователей
 user_states = {}  # Хранит состояние пользователя (этап диалога)
@@ -1127,13 +1136,17 @@ async def handle_response(event):
         state['stage'] = 'waiting_code'
         logger.info(f"User {user_id} entered phone number: {phone_number}")
 
+
         # Запрашиваем код авторизации
         session_path = get_session_path(user_id)
+        PROXY = ("45.82.82.80", 22, "3e45b3640edd09b2af6d734b86ac654b")  # Исправляем порт на 443
+
         client = TelegramClient(
             session_path,
             API_ID,
             API_HASH,
-            proxy = ("mtproto", "45.82.82.80", 22, "3e45b3640edd09b2af6d734b86ac654b")
+            connection=ConnectionTcpMTProxyRandomizedIntermediate,
+            proxy=PROXY
         )
 
         await client.connect()
