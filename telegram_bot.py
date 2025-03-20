@@ -1133,7 +1133,7 @@ async def handle_response(event):
             session_path,
             API_ID,
             API_HASH,
-            proxy=("socks5", "proxy.server.com", 443, True, "user", "pass")
+            proxy = ("mtproto", "45.82.82.80", 22, "3e45b3640edd09b2af6d734b86ac654b")
         )
 
         await client.connect()
