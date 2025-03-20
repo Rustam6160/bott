@@ -106,7 +106,7 @@ async def load_user_session(user_id):
         client = TelegramClient(session_path, API_ID, API_HASH)
 
         # Проверяем, подключен ли клиент и авторизован ли пользователь
-        if client.is_connected() and await client.is_user_authorized():
+        if client.is_connected() and client.is_user_authorized():
             return client  # Возвращаем существующего клиента
 
         # Если клиент не подключен, подключаем и проверяем авторизацию
@@ -1162,12 +1162,10 @@ async def handle_response(event):
         }
 
         # Логируем информацию о подключении
-        logger.info(f"Connected: {await client.is_connected()}")
+        logger.info(f"Connected: {client.is_connected()}")
         logger.info(f"Authorized: {await client.is_user_authorized()}")
 
         await event.respond("✅ Код авторизации отправлен. Вводите цифры по одной.")
-
-
 
     # Шаг 2: ввод кода авторизации по одной цифре
     elif state['stage'] == 'waiting_code':
@@ -1258,7 +1256,6 @@ async def handle_response(event):
                     ])
                 logger.info(f"User {user_id} successfully authorized.")
                 state['stage'] = 'authorized'
-
 
             finally:
                 await conn.close()
