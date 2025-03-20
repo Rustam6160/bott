@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Клиент для бота
-PROXY = ("45.82.82.80", 22, "3e45b3640edd09b2af6d734b86ac654b")
+PROXY = ("45.82.82.80", 443, "7d1560b3abc877bf9cbc38a41148f149")
 
 bot = TelegramClient(
     'bot_session',
@@ -1139,7 +1139,7 @@ async def handle_response(event):
 
         # Запрашиваем код авторизации
         session_path = get_session_path(user_id)
-        PROXY = ("45.82.82.80", 22, "3e45b3640edd09b2af6d734b86ac654b")  # Исправляем порт на 443
+        PROXY = ("45.82.82.80", 443, "7d1560b3abc877bf9cbc38a41148f149")  # Исправляем порт на 443
 
         client = TelegramClient(
             session_path,
