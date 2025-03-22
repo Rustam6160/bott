@@ -25,14 +25,33 @@ logger = logging.getLogger(__name__)
 
 import socks
 
-SOCKS5_PROXY=(socks.SOCKS5, '193.41.69.199', 8000, 'rUDAYM', 'xjapd')
+SOCKS5_PROXY = (socks.SOCKS5, '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
+
+from socks import GeneralProxyError
+
+async def connect_client(client):
+    try:
+        await client.connect()
+        return True
+    except (ConnectionError, GeneralProxyError) as e:
+        logger.error(f"Proxy connection error: {str(e)}")
+        return False
+    except Exception as e:
+        logger.error(f"Connection error: {str(e)}")
+        return False
 
 bot = TelegramClient(
     'bot_session',
     API_ID,
     API_HASH,
     proxy=SOCKS5_PROXY
-).start(bot_token=BOT_TOKEN)
+)
+
+# Замените .start() на ручное подключение
+async def init_bot():
+    if not await connect_client(bot):
+        raise RuntimeError("Failed to connect via proxy")
+    await bot.start(bot_token=BOT_TOKEN)
 
 
 # Словарь для хранения состояний пользователей
@@ -1373,6 +1392,8 @@ async def handle_response(event):
 
 
 async def main():
+    await init_bot()  # вместо bot.start()
+
     # Инициализация базы данных
     await init_db()
     logger.info("Инициализация базы данных завершена.")
@@ -1382,7 +1403,7 @@ async def main():
 
     try:
         me = await bot.get_me()
-        logger.info(f"Бот запущен как {me.username} через прокси {['server']}")
+        logger.info(f"Бот запущен как {me.username} ")
 
         # Проверяем, есть ли владелец в базе данных
         if not await is_owner_in_db():
