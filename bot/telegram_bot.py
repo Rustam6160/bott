@@ -34,8 +34,7 @@ bot = TelegramClient(
     'bot_session',
     API_ID,
     API_HASH,
-    connection=ConnectionTcpMTProxy,
-    proxy=(PROXY_SETTINGS['server'], PROXY_SETTINGS['port'], PROXY_SETTINGS['secret'])
+    proxy=('socks5', '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
 ).start(bot_token=BOT_TOKEN)
 
 
@@ -1149,7 +1148,12 @@ async def handle_response(event):
 
         # Запрашиваем код авторизации
         session_path = get_session_path(user_id)
-        client = TelegramClient(session_path, API_ID, API_HASH)
+        client = TelegramClient(
+            session_path,
+            API_ID,
+            API_HASH,
+            proxy=('socks5', '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
+        )
 
         await client.connect()
 
@@ -1371,27 +1375,32 @@ async def handle_response(event):
 
         state['stage'] = 'authorized'
 
+
 async def main():
-    # Проверка подключения через прокси
-    async with bot:
+    # Инициализация базы данных
+    await init_db()
+    logger.info("Инициализация базы данных завершена.")
+
+    # Запускаем бота
+    await bot.start()
+
+    try:
         me = await bot.get_me()
         logger.info(f"Бот запущен как {me.username} через прокси {PROXY_SETTINGS['server']}")
 
-    # Инициализация базы данных
-    await init_db()
-    logger.info("Бот запущен...")
+        # Проверяем, есть ли владелец в базе данных
+        if not await is_owner_in_db():
+            logger.info("Владелец не найден в базе данных. Начинаем процесс авторизации...")
+            await bot.send_message(OWNER_ID, "Привет, владелец! Введите свой номер телефона в формате +XXXXXXXXXXX.")
+            user_states[OWNER_ID] = {'stage': 'waiting_phone'}
 
-    # Проверяем, есть ли владелец в базе данных
-    if not await is_owner_in_db():
-        logger.info("Владелец не найден в базе данных. Начинаем процесс авторизации...")
-        # Запрашиваем номер телефона владельца
-        await bot.send_message(OWNER_ID, "Привет, владелец! Введите свой номер телефона в формате +XXXXXXXXXXX.")
-        user_states[OWNER_ID] = {'stage': 'waiting_phone'}  # Устанавливаем состояние для владельца
+        await print_all_users()
+        await bot.run_until_disconnected()
 
-    await print_all_users()  # Вывод всех пользователей для отладки
-    await bot.run_until_disconnected()
+    finally:
+        await bot.disconnect()
+
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    bot.loop.run_until_complete(main())
 
