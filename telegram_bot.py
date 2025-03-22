@@ -25,7 +25,15 @@ logger = logging.getLogger(__name__)
 
 import socks
 
-SOCKS5_PROXY = (socks.SOCKS5, '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
+# SOCKS5_PROXY = (socks.SOCKS5, '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
+
+SOCKS5_PROXY = {
+    "proxy_type": "http",
+    "addr": "193.41.69.199",
+    "port": 8000,
+    "username": "rUDAYM",
+    "password": "xjapd"
+}
 
 from socks import GeneralProxyError
 
