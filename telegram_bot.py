@@ -7,7 +7,6 @@ import re
 import os
 import aiosqlite
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, FloodWaitError
-from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator, Channel
 
 OWNER_ID = 7179318927  # Замените на ваш ID
 
@@ -22,7 +21,11 @@ logger = logging.getLogger(__name__)
 
 # Клиент для бота
 # Добавьте настройки прокси из изображения
-SOCKS5_PROXY = ('socks5', '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
+# SOCKS5_PROXY = ('socks5', '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
+
+import socks
+
+SOCKS5_PROXY=(socks.SOCKS5, '193.41.69.199', 8000, 'rUDAYM', 'xjapd')
 
 bot = TelegramClient(
     'bot_session',
