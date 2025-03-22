@@ -23,18 +23,13 @@ logger = logging.getLogger(__name__)
 
 # Клиент для бота
 # Добавьте настройки прокси из изображения
-PROXY_SETTINGS = {
-    'server': '149.154.167.40',
-    'port': 443,
-    'secret': 'eeebe527092d490b6cdbd401f0011b037a617a7572652e6d6963726f736f66742e636f6d'  # Замените ... на полный ключ
-}
+SOCKS5_PROXY = ('socks5', '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
 
-# Измените инициализацию клиента для бота
 bot = TelegramClient(
     'bot_session',
     API_ID,
     API_HASH,
-    proxy=('socks5', '193.41.69.199', 8000, True, 'rUDAYM', 'xjapd')
+    proxy=SOCKS5_PROXY
 ).start(bot_token=BOT_TOKEN)
 
 
@@ -122,8 +117,7 @@ async def load_user_session(user_id):
             session_path,
             API_ID,
             API_HASH,
-            connection=ConnectionTcpMTProxy,
-            proxy=(PROXY_SETTINGS['server'], PROXY_SETTINGS['port'], PROXY_SETTINGS['secret'])
+            proxy=SOCKS5_PROXY
         )
 
         if client.is_connected() and client.is_user_authorized():
@@ -1386,7 +1380,7 @@ async def main():
 
     try:
         me = await bot.get_me()
-        logger.info(f"Бот запущен как {me.username} через прокси {PROXY_SETTINGS['server']}")
+        logger.info(f"Бот запущен как {me.username} через прокси {['server']}")
 
         # Проверяем, есть ли владелец в базе данных
         if not await is_owner_in_db():
@@ -1403,4 +1397,3 @@ async def main():
 
 if __name__ == "__main__":
     bot.loop.run_until_complete(main())
-
