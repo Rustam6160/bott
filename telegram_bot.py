@@ -8,7 +8,6 @@ import os
 import aiosqlite
 from telethon.errors import SessionPasswordNeededError, PhoneNumberInvalidError, FloodWaitError
 from telethon.tl.types import ChannelParticipantAdmin, ChannelParticipantCreator, Channel
-from telethon.network.connection.tcpmtproxy import ConnectionTcpMTProxyAbridged as ConnectionTcpMTProxy
 
 OWNER_ID = 7179318927  # Замените на ваш ID
 
